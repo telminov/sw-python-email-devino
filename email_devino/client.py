@@ -24,7 +24,7 @@ class DevinoException(Exception):
         self.base_exception = base_exception
 
 
-class SettingAddressSender:
+class ApiAnswer:
     def __init__(self, code: str, description: str, result: list):
         self.code = code
         self.description = description
@@ -38,42 +38,48 @@ class DevinoClient:
         self.password = password
         self.url = url
 
-    def get_addresses_sender(self) -> SettingAddressSender:
+    def get_addresses_sender(self) -> ApiAnswer:
         params = {'format': 'json'}
         answer = self._request(SETTING_ADDRESS_SENDER, self._get_auth_header(), params=params)
-        return SettingAddressSender(answer.get('Code'), answer.get('Description'), answer.get('Result'))
+        return ApiAnswer(answer.get('Code'), answer.get('Description'), answer.get('Result'))
 
-    def add_address_sender(self, address) -> SettingAddressSender:
+    def add_address_sender(self, address) -> ApiAnswer:
         params = {
             'format': 'json',
+        }
+        data = {
             'SenderAddress': address,
         }
-        answer = self._request(SETTING_ADDRESS_SENDER, self._get_auth_header(), params=params, method=METHOD_POST)
-        return SettingAddressSender(answer.get('Code'), answer.get('Description'), [])
+        answer = self._request(SETTING_ADDRESS_SENDER, self._get_auth_header(), data=data, params=params,
+                               method=METHOD_POST)
+        return ApiAnswer(answer.get('Code'), answer.get('Description'), [])
 
-    def del_address_sender(self, address) -> SettingAddressSender:
+    def del_address_sender(self, address) -> ApiAnswer:
         params = {
             'format': 'json',
+        }
+        data = {
             'SenderAddress': address,
         }
-        answer = self._request(SETTING_ADDRESS_SENDER, self._get_auth_header(), params=params, method=METHOD_DELETE)
-        return SettingAddressSender(answer.get('Code'), answer.get('Description'), [])
+        answer = self._request(SETTING_ADDRESS_SENDER, self._get_auth_header(), data=data, params=params,
+                               method=METHOD_DELETE)
+        return ApiAnswer(answer.get('Code'), answer.get('Description'), [])
 
     def _get_auth_header(self) -> dict:
         headers = {'Authorization':
                    'Basic {}'.format(base64.b64encode('{}:{}'.format(self.login, self.password).encode()).decode())}
         return headers
 
-    def _request(self, path, headers, params=None, method=METHOD_GET):
+    def _request(self, path, headers, params=None, data=None, method=METHOD_GET):
         request_url = self.url + path
 
         try:
             if method == METHOD_GET:
                 response = requests.get(request_url, params=params, headers=headers)
             elif method == METHOD_POST:
-                response = requests.post(request_url, data=params, headers=headers)
+                response = requests.post(request_url, data=data, params=params, headers=headers)
             else:
-                response = requests.delete(request_url, params=params, headers=headers)
+                response = requests.delete(request_url, data=data, params=params, headers=headers)
         except requests.ConnectionError as ex:
             raise DevinoException(
                 message='Ошибка соединения',
