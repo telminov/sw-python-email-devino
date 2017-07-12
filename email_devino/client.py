@@ -5,7 +5,7 @@ import os
 
 REST_URL = 'https://integrationapi.net/email/v1'
 SETTING_ADDRESS_SENDER = '/UserSettings/SenderAddresses'
-MAILING_LIST = '/Tasks'
+BULK = '/Tasks'
 TEMPLATE = '/Templates'
 STATE = '/Statistics'
 STATE_DETAILING = '/Statistics/Messages'
@@ -73,56 +73,55 @@ class DevinoClient:
                                method=METHOD_DELETE)
         return ApiAnswer(answer.get('Code'), answer.get('Description'), [])
 
-    def get_mailing_list(self, items_range: str = None) -> ApiAnswer:
+    def get_bulk_list(self, items_range: str = '1-100') -> ApiAnswer:
         params = {
             'format': 'json',
         }
         headers = self._get_auth_header()
-        if items_range:
-            headers['Range'] = 'items={}'.format(items_range)
+        headers['Range'] = 'items={}'.format(items_range)
 
-        answer = self._request(MAILING_LIST, headers, params=params)
+        answer = self._request(BULK, headers, params=params)
         return ApiAnswer(answer.get('Code'), answer.get('Description'), answer.get('Result'))
 
-    def get_mailing(self, id_mailing: int) -> ApiAnswer:
+    def get_bulk(self, id_mailing: int) -> ApiAnswer:
         params = {
             'format': 'json',
         }
-        request_path = os.path.join(MAILING_LIST, str(id_mailing))
+        request_path = os.path.join(BULK, str(id_mailing))
         answer = self._request(request_path, self._get_auth_header(), params=params)
         return ApiAnswer(answer.get('Code'), answer.get('Description'), answer.get('Result'))
 
-    def add_mailing(self, data: dict) -> ApiAnswer:
+    def add_bulk(self, data: dict) -> ApiAnswer:
         params = {
             'format': 'json',
         }
-        answer = self._request(MAILING_LIST, self._get_auth_header(), data=data, params=params, method=METHOD_POST)
+        answer = self._request(BULK, self._get_auth_header(), data=data, params=params, method=METHOD_POST)
         return ApiAnswer(answer.get('Code'), answer.get('Description'), answer.get('Result'))
 
-    def edit_mailing(self, id_mailing: int, data: dict) -> ApiAnswer:
+    def edit_bulk(self, id_mailing: int, data: dict) -> ApiAnswer:
         params = {
             'format': 'json',
         }
-        request_path = os.path.join(MAILING_LIST, str(id_mailing))
+        request_path = os.path.join(BULK, str(id_mailing))
         answer = self._request(request_path, self._get_auth_header(), data=data, params=params, method=METHOD_PUT)
         return ApiAnswer(answer.get('Code'), answer.get('Description'), answer.get('Result'))
 
-    def edit_status_mailing(self, id_mailing: int, task_state: str) -> ApiAnswer:
+    def edit_bulk_status(self, id_mailing: int, task_state: str) -> ApiAnswer:
         params = {
             'format': 'json',
         }
         data = {
             'State': task_state,
         }
-        request_path = os.path.join(MAILING_LIST, str(id_mailing), 'State')
+        request_path = os.path.join(BULK, str(id_mailing), 'State')
         answer = self._request(request_path, self._get_auth_header(), data=data, params=params, method=METHOD_PUT)
         return ApiAnswer(answer.get('Code'), answer.get('Description'), answer.get('Result'))
 
-    def get_template(self, id_template: id) -> ApiAnswer:
+    def get_template(self, id_template: int) -> ApiAnswer:
         params = {
             'format': 'json',
         }
-        request_path = os.path.join(TEMPLATE, id_template)
+        request_path = os.path.join(TEMPLATE, str(id_template))
         answer = self._request(request_path, self._get_auth_header(), params=params)
         return ApiAnswer(answer.get('Code'), answer.get('Description'), answer.get('Result'))
 
@@ -160,7 +159,7 @@ class DevinoClient:
         return ApiAnswer(answer.get('Code'), answer.get('Description'), answer.get('Result'))
 
     def get_state_detailing(self, id_mailing: int, ds: datetime.datetime, de: datetime.datetime,
-                            state: str = '', items_range: str = None) -> ApiAnswer:
+                            state: str = '', items_range: str = '1-100') -> ApiAnswer:
         params = {
             'format': 'json',
             'TaskId': id_mailing,
@@ -169,8 +168,7 @@ class DevinoClient:
             'State': state,
         }
         headers = self._get_auth_header()
-        if items_range:
-            headers['Range'] = 'items={}'.format(items_range)
+        headers['Range'] = 'items={}'.format(items_range)
 
         answer = self._request(STATE_DETAILING, headers, params=params)
         return ApiAnswer(answer.get('Code'), answer.get('Description'), answer.get('Result'))
