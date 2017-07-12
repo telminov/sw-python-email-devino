@@ -68,10 +68,8 @@ class DevinoClient:
         params = {
             'format': 'json',
         }
-        data = {
-            'SenderAddress': address,
-        }
-        answer = self._request(SETTING_ADDRESS_SENDER, self._get_auth_header(), data=data, params=params,
+        request_path = os.path.join(SETTING_ADDRESS_SENDER, address)
+        answer = self._request(request_path, self._get_auth_header(), params=params,
                                method=METHOD_DELETE)
         return ApiAnswer(answer.get('Code'), answer.get('Description'), [])
 
