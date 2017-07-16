@@ -30,6 +30,14 @@ class ApiAnswer:
         self.description = description
         self.result = result
 
+    @classmethod
+    def create(cls, answer_data: dict):
+        return cls(
+            code=answer_data.get('Code'),
+            description=answer_data.get('Description'),
+            result=answer_data.get('Result'),
+        )
+
 
 class DevinoClient:
 
@@ -41,7 +49,7 @@ class DevinoClient:
     def get_addresses_sender(self) -> ApiAnswer:
         params = {'format': 'json'}
         answer = self._request(SETTING_ADDRESS_SENDER, self._get_auth_header(), params=params)
-        return ApiAnswer(answer.get('Code'), answer.get('Description'), answer.get('Result'))
+        return ApiAnswer.create(answer)
 
     def add_address_sender(self, address) -> ApiAnswer:
         params = {
@@ -52,7 +60,7 @@ class DevinoClient:
         }
         answer = self._request(SETTING_ADDRESS_SENDER, self._get_auth_header(), data=data, params=params,
                                method=METHOD_POST)
-        return ApiAnswer(answer.get('Code'), answer.get('Description'), [])
+        return ApiAnswer.create(answer)
 
     def del_address_sender(self, address) -> ApiAnswer:
         params = {
@@ -63,7 +71,7 @@ class DevinoClient:
         }
         answer = self._request(SETTING_ADDRESS_SENDER, self._get_auth_header(), data=data, params=params,
                                method=METHOD_DELETE)
-        return ApiAnswer(answer.get('Code'), answer.get('Description'), [])
+        return ApiAnswer.create(answer)
 
     def _get_auth_header(self) -> dict:
         headers = {'Authorization':
