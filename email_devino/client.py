@@ -38,6 +38,14 @@ class ApiAnswer:
         self.description = description
         self.result = result
 
+    @classmethod
+    def create(cls, answer_data: dict):
+        return cls(
+            code=answer_data.get('Code'),
+            description=answer_data.get('Description'),
+            result=answer_data.get('Result'),
+        )
+
 
 class DevinoClient:
 
@@ -51,7 +59,7 @@ class DevinoClient:
             'format': 'json',
         }
         answer = self._request(SETTING_ADDRESS_SENDER, self._get_auth_header(), params=params)
-        return ApiAnswer(answer.get('Code'), answer.get('Description'), answer.get('Result'))
+        return ApiAnswer.create(answer)
 
     def add_address_sender(self, address: str) -> ApiAnswer:
         params = {
@@ -62,7 +70,7 @@ class DevinoClient:
         }
         answer = self._request(SETTING_ADDRESS_SENDER, self._get_auth_header(), data=data, params=params,
                                method=METHOD_POST)
-        return ApiAnswer(answer.get('Code'), answer.get('Description'), [])
+        return ApiAnswer.create(answer)
 
     def del_address_sender(self, address: str) -> ApiAnswer:
         params = {
@@ -71,7 +79,7 @@ class DevinoClient:
         request_path = os.path.join(SETTING_ADDRESS_SENDER, address)
         answer = self._request(request_path, self._get_auth_header(), params=params,
                                method=METHOD_DELETE)
-        return ApiAnswer(answer.get('Code'), answer.get('Description'), [])
+        return ApiAnswer.create(answer)
 
     def get_bulk_list(self, items_range: str = '1-100') -> ApiAnswer:
         params = {
