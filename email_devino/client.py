@@ -1,5 +1,4 @@
 import base64
-import datetime
 import requests
 import os
 
@@ -15,6 +14,8 @@ METHOD_GET = 'get'
 METHOD_POST = 'post'
 METHOD_DELETE = 'delete'
 METHOD_PUT = 'put'
+
+FORMAT = {'format': 'json'}
 
 
 class DevinoError:
@@ -55,154 +56,104 @@ class DevinoClient:
         self.url = url
 
     def get_addresses_sender(self) -> ApiAnswer:
-        params = {
-            'format': 'json',
-        }
-        answer = self._request(SETTING_ADDRESS_SENDER, self._get_auth_header(), params=params)
+        answer = self._request(SETTING_ADDRESS_SENDER, self._get_auth_header())
         return ApiAnswer.create(answer)
 
     def add_address_sender(self, address: str) -> ApiAnswer:
-        params = {
-            'format': 'json',
-        }
         data = {
             'SenderAddress': address,
         }
-        answer = self._request(SETTING_ADDRESS_SENDER, self._get_auth_header(), data=data, params=params,
-                               method=METHOD_POST)
+        answer = self._request(SETTING_ADDRESS_SENDER, self._get_auth_header(), data=data, method=METHOD_POST)
         return ApiAnswer.create(answer)
 
     def del_address_sender(self, address: str) -> ApiAnswer:
-        params = {
-            'format': 'json',
-        }
         request_path = os.path.join(SETTING_ADDRESS_SENDER, address)
-        answer = self._request(request_path, self._get_auth_header(), params=params,
-                               method=METHOD_DELETE)
+        answer = self._request(request_path, self._get_auth_header(), method=METHOD_DELETE)
         return ApiAnswer.create(answer)
 
     def get_bulk_list(self, items_range: str = '1-100') -> ApiAnswer:
-        params = {
-            'format': 'json',
-        }
         headers = self._get_auth_header()
         headers['Range'] = 'items={}'.format(items_range)
 
-        answer = self._request(BULK, headers, params=params)
-        return ApiAnswer(answer.get('Code'), answer.get('Description'), answer.get('Result'))
+        answer = self._request(BULK, headers)
+        return ApiAnswer.create(answer)
 
-    def get_bulk(self, id_mailing: int) -> ApiAnswer:
-        params = {
-            'format': 'json',
-        }
-        request_path = os.path.join(BULK, str(id_mailing))
-        answer = self._request(request_path, self._get_auth_header(), params=params)
-        return ApiAnswer(answer.get('Code'), answer.get('Description'), answer.get('Result'))
+    def get_bulk(self, id_bulk: int) -> ApiAnswer:
+        request_path = os.path.join(BULK, str(id_bulk))
+        answer = self._request(request_path, self._get_auth_header())
+        return ApiAnswer.create(answer)
 
     def add_bulk(self, data: dict) -> ApiAnswer:
-        params = {
-            'format': 'json',
-        }
-        answer = self._request(BULK, self._get_auth_header(), data=data, params=params, method=METHOD_POST)
-        return ApiAnswer(answer.get('Code'), answer.get('Description'), answer.get('Result'))
+        answer = self._request(BULK, self._get_auth_header(), data=data, method=METHOD_POST)
+        return ApiAnswer.create(answer)
 
-    def edit_bulk(self, id_mailing: int, data: dict) -> ApiAnswer:
-        params = {
-            'format': 'json',
-        }
-        request_path = os.path.join(BULK, str(id_mailing))
-        answer = self._request(request_path, self._get_auth_header(), data=data, params=params, method=METHOD_PUT)
-        return ApiAnswer(answer.get('Code'), answer.get('Description'), answer.get('Result'))
+    def edit_bulk(self, id_bulk: int, data: dict) -> ApiAnswer:
+        request_path = os.path.join(BULK, str(id_bulk))
+        answer = self._request(request_path, self._get_auth_header(), data=data, method=METHOD_PUT)
+        return ApiAnswer.create(answer)
 
-    def edit_bulk_status(self, id_mailing: int, task_state: str) -> ApiAnswer:
-        params = {
-            'format': 'json',
-        }
+    def edit_bulk_status(self, id_bulk: int, task_state: str) -> ApiAnswer:
         data = {
             'State': task_state,
         }
-        request_path = os.path.join(BULK, str(id_mailing), 'State')
-        answer = self._request(request_path, self._get_auth_header(), data=data, params=params, method=METHOD_PUT)
-        return ApiAnswer(answer.get('Code'), answer.get('Description'), answer.get('Result'))
+        request_path = os.path.join(BULK, str(id_bulk), 'State')
+        answer = self._request(request_path, self._get_auth_header(), data=data, method=METHOD_PUT)
+        return ApiAnswer.create(answer)
 
     def get_template(self, id_template: int) -> ApiAnswer:
-        params = {
-            'format': 'json',
-        }
         request_path = os.path.join(TEMPLATE, str(id_template))
-        answer = self._request(request_path, self._get_auth_header(), params=params)
-        return ApiAnswer(answer.get('Code'), answer.get('Description'), answer.get('Result'))
+        answer = self._request(request_path, self._get_auth_header())
+        return ApiAnswer.create(answer)
 
     def add_template(self, data: dict) -> ApiAnswer:
-        params = {
-            'format': 'json',
-        }
-        answer = self._request(TEMPLATE, self._get_auth_header(), data=data, params=params, method=METHOD_POST)
-        return ApiAnswer(answer.get('Code'), answer.get('Description'), answer.get('Result'))
+        answer = self._request(TEMPLATE, self._get_auth_header(), data=data, method=METHOD_POST)
+        return ApiAnswer.create(answer)
 
     def edit_template(self, id_template: int, data: dict) -> ApiAnswer:
-        params = {
-            'format': 'json',
-        }
         request_path = os.path.join(TEMPLATE, str(id_template))
-        answer = self._request(request_path, self._get_auth_header(), data=data, params=params, method=METHOD_PUT)
-        return ApiAnswer(answer.get('Code'), answer.get('Description'), answer.get('Result'))
+        answer = self._request(request_path, self._get_auth_header(), data=data, method=METHOD_PUT)
+        return ApiAnswer.create(answer)
 
     def del_template(self, id_template: int) -> ApiAnswer:
-        params = {
-            'format': 'json',
-        }
         request_path = os.path.join(TEMPLATE, str(id_template))
-        answer = self._request(request_path, self._get_auth_header(), params=params, method=METHOD_DELETE)
-        return ApiAnswer(answer.get('Code'), answer.get('Description'), answer.get('Result'))
+        answer = self._request(request_path, self._get_auth_header(), method=METHOD_DELETE)
+        return ApiAnswer.create(answer)
 
-    def get_state(self, id_mailing: int, ds: datetime.datetime, de: datetime.datetime) -> ApiAnswer:
+    def get_state(self, id_bulk: int) -> ApiAnswer:
         params = {
-            'format': 'json',
-            'TaskId': id_mailing,
-            'StartDateTime': ds,
-            'EndDateTime': de,
+            'TaskId': id_bulk,
         }
         answer = self._request(STATE, self._get_auth_header(), params=params)
-        return ApiAnswer(answer.get('Code'), answer.get('Description'), answer.get('Result'))
+        return ApiAnswer.create(answer)
 
-    def get_state_detailing(self, id_mailing: int, ds: datetime.datetime, de: datetime.datetime,
-                            state: str = '', items_range: str = '1-100') -> ApiAnswer:
+    def get_state_detailing(self, id_bulk: int, state: str = '', items_range: str = '1-100') -> ApiAnswer:
         params = {
-            'format': 'json',
-            'TaskId': id_mailing,
-            'StartDateTime': ds,
-            'EndDateTime': de,
+            'TaskId': id_bulk,
             'State': state,
         }
         headers = self._get_auth_header()
         headers['Range'] = 'items={}'.format(items_range)
 
         answer = self._request(STATE_DETAILING, headers, params=params)
-        return ApiAnswer(answer.get('Code'), answer.get('Description'), answer.get('Result'))
+        return ApiAnswer.create(answer)
 
     def send_transactional_message(self, data: dict) -> ApiAnswer:
-        params = {
-            'format': 'json',
-        }
-        answer = self._request(TRANSACTIONAL_EMAIL, self._get_auth_header(), data=data, params=params,
-                               method=METHOD_POST)
-        return ApiAnswer(answer.get('Code'), answer.get('Description'), answer.get('Result'))
+        answer = self._request(TRANSACTIONAL_EMAIL, self._get_auth_header(), data=data, method=METHOD_POST)
+        return ApiAnswer.create(answer)
 
     def get_status_transactional_message(self, data: list) -> ApiAnswer:
-        params = {
-            'format': 'json'
-        }
         request_path = os.path.join(TRANSACTIONAL_EMAIL, ','.join(data))
-        answer = self._request(request_path, self._get_auth_header(), params=params)
-        return ApiAnswer(answer.get('Code'), answer.get('Description'), answer.get('Result'))
+
+        answer = self._request(request_path, self._get_auth_header())
+        return ApiAnswer.create(answer)
 
     def _get_auth_header(self) -> dict:
         headers = {'Authorization':
                    'Basic {}'.format(base64.b64encode('{}:{}'.format(self.login, self.password).encode()).decode())}
         return headers
 
-    def _request(self, path, headers, params=None, data=None, method=METHOD_GET):
+    def _request(self, path, headers, params=FORMAT, data=None, method=METHOD_GET):
+        params['format'] = 'json'
         request_url = self.url + path
 
         try:
