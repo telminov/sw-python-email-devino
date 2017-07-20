@@ -1,4 +1,5 @@
 import base64
+import datetime
 import requests
 import os
 
@@ -60,10 +61,10 @@ class DevinoClient:
         return ApiAnswer.create(answer)
 
     def add_address_sender(self, address: str) -> ApiAnswer:
-        data = {
+        json = {
             'SenderAddress': address,
         }
-        answer = self._request(SETTING_ADDRESS_SENDER, self._get_auth_header(), data=data, method=METHOD_POST)
+        answer = self._request(SETTING_ADDRESS_SENDER, self._get_auth_header(), json=json, method=METHOD_POST)
         return ApiAnswer.create(answer)
 
     def del_address_sender(self, address: str) -> ApiAnswer:
@@ -83,21 +84,42 @@ class DevinoClient:
         answer = self._request(request_path, self._get_auth_header())
         return ApiAnswer.create(answer)
 
-    def add_bulk(self, data: dict) -> ApiAnswer:
-        answer = self._request(BULK, self._get_auth_header(), data=data, method=METHOD_POST)
+    def add_bulk(self, name: str, sender_email: str, sender_name: str, subject: str, text: str, type_bulk: int,
+                 start_datetime: datetime.datetime = None, end_datetime: datetime.datetime = None, user_id: str = "",
+                 contact_list: list = None, template_id: str = "",  duplicates: bool = None) -> ApiAnswer:
+        json = {
+            "Name": name,
+            "Sender": {
+                "Address": sender_email,
+                "Name": sender_name,
+            },
+            "Subject": subject,
+            "Text": text,
+            "Type": type_bulk,
+            "UserCampaignId": user_id,
+            "TemplateId": template_id,
+            "SendDuplicates": duplicates
+        }
+        if contact_list:
+            json["ContactGroups"] = [{"Id": id_contact, "Included": included} for id_contact, included in contact_list]
+        if start_datetime:
+            json['StartDateTime'] = start_datetime.strftime("%m/%d/%Y %h:%m:%s")
+        if end_datetime:
+            json['EndDateTime'] = end_datetime.strftime("%m/%d/%Y %h:%m:%s")
+        answer = self._request(BULK, self._get_auth_header(), json=json, method=METHOD_POST)
         return ApiAnswer.create(answer)
 
-    def edit_bulk(self, id_bulk: int, data: dict) -> ApiAnswer:
+    def edit_bulk(self, id_bulk: int, json: dict) -> ApiAnswer:
         request_path = os.path.join(BULK, str(id_bulk))
-        answer = self._request(request_path, self._get_auth_header(), data=data, method=METHOD_PUT)
+        answer = self._request(request_path, self._get_auth_header(), json=json, method=METHOD_PUT)
         return ApiAnswer.create(answer)
 
     def edit_bulk_status(self, id_bulk: int, task_state: str) -> ApiAnswer:
-        data = {
+        json = {
             'State': task_state,
         }
         request_path = os.path.join(BULK, str(id_bulk), 'State')
-        answer = self._request(request_path, self._get_auth_header(), data=data, method=METHOD_PUT)
+        answer = self._request(request_path, self._get_auth_header(), json=json, method=METHOD_PUT)
         return ApiAnswer.create(answer)
 
     def get_template(self, id_template: int) -> ApiAnswer:
@@ -105,13 +127,35 @@ class DevinoClient:
         answer = self._request(request_path, self._get_auth_header())
         return ApiAnswer.create(answer)
 
-    def add_template(self, data: dict) -> ApiAnswer:
-        answer = self._request(TEMPLATE, self._get_auth_header(), data=data, method=METHOD_POST)
+    def add_template(self, name: str, text: str, sender_email: str = "", sender_name: str = "",
+                     subject: str = "", user_template_id: str = "") -> ApiAnswer:
+        json = {
+            "Name": name,
+            "Sender": {
+                "Address": sender_email,
+                "Name": sender_name
+            },
+            "Subject": subject,
+            "Text": text,
+            "UserTemplateId": user_template_id,
+        }
+        answer = self._request(TEMPLATE, self._get_auth_header(), json=json, method=METHOD_POST)
         return ApiAnswer.create(answer)
 
-    def edit_template(self, id_template: int, data: dict) -> ApiAnswer:
+    def edit_template(self, id_template: int, name: str, text: str, sender_email: str = "", sender_name: str = "",
+                      subject: str = "", user_template_id: str = "") -> ApiAnswer:
+        json = {
+            "Name": name,
+            "Sender": {
+                "Address": sender_email,
+                "Name": sender_name
+            },
+            "Subject": subject,
+            "Text": text,
+            "UserTemplateId": user_template_id,
+        }
         request_path = os.path.join(TEMPLATE, str(id_template))
-        answer = self._request(request_path, self._get_auth_header(), data=data, method=METHOD_PUT)
+        answer = self._request(request_path, self._get_auth_header(), json=json, method=METHOD_PUT)
         return ApiAnswer.create(answer)
 
     def del_template(self, id_template: int) -> ApiAnswer:
@@ -137,8 +181,25 @@ class DevinoClient:
         answer = self._request(STATE_DETAILING, headers, params=params)
         return ApiAnswer.create(answer)
 
-    def send_transactional_message(self, data: dict) -> ApiAnswer:
-        answer = self._request(TRANSACTIONAL_EMAIL, self._get_auth_header(), data=data, method=METHOD_POST)
+    def send_transactional_message(self, sender_email: str, sender_name: str, recipient_email: str, recipient_name: str,
+                                   subject: str, text: str, user_message_id: str = "", user_campaign_id: str = "",
+                                   template_id: str = "") -> ApiAnswer:
+        json = {
+            "Sender": {
+                "Address": sender_email,
+                "Name": sender_name
+            },
+            "Recipient": {
+                "Address": recipient_email,
+                "Name": recipient_name
+            },
+            "Subject": subject,
+            "Text": text,
+            "UserMessageId": user_message_id,
+            "UserCampaignId": user_campaign_id,
+            "TemplateId": template_id,
+        }
+        answer = self._request(TRANSACTIONAL_EMAIL, self._get_auth_header(), json=json, method=METHOD_POST)
         return ApiAnswer.create(answer)
 
     def get_status_transactional_message(self, data: list) -> ApiAnswer:
@@ -152,7 +213,7 @@ class DevinoClient:
                    'Basic {}'.format(base64.b64encode('{}:{}'.format(self.login, self.password).encode()).decode())}
         return headers
 
-    def _request(self, path, headers, params=FORMAT, data=None, method=METHOD_GET):
+    def _request(self, path, headers, params=FORMAT, json=None, method=METHOD_GET):
         params['format'] = 'json'
         request_url = self.url + path
 
@@ -160,11 +221,11 @@ class DevinoClient:
             if method == METHOD_GET:
                 response = requests.get(request_url, params=params, headers=headers)
             elif method == METHOD_POST:
-                response = requests.post(request_url, data=data, params=params, headers=headers)
+                response = requests.post(request_url, json=json, params=params, headers=headers)
             elif method == METHOD_DELETE:
-                response = requests.delete(request_url, data=data, params=params, headers=headers)
+                response = requests.delete(request_url, json=json, params=params, headers=headers)
             else:
-                response = requests.put(request_url, data=data, params=params, headers=headers)
+                response = requests.put(request_url, json=json, params=params, headers=headers)
         except requests.ConnectionError as ex:
             raise DevinoException(
                 message='Ошибка соединения',
