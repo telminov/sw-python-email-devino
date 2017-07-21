@@ -35,17 +35,19 @@ class DevinoException(Exception):
 
 
 class ApiAnswer:
-    def __init__(self, code: str, description: str, result: list):
+    def __init__(self, code: str, description: str, result: list, request_data):
         self.code = code
         self.description = description
         self.result = result
+        self.request_data = request_data
 
     @classmethod
-    def create(cls, answer_data: dict):
+    def create(cls, answer_data: dict, request_data=None):
         return cls(
             code=answer_data.get('Code'),
             description=answer_data.get('Description'),
             result=answer_data.get('Result'),
+            request_data=request_data,
         )
 
 
@@ -65,12 +67,12 @@ class DevinoClient:
             'SenderAddress': address,
         }
         answer = self._request(SETTING_ADDRESS_SENDER, self._get_auth_header(), json=json, method=METHOD_POST)
-        return ApiAnswer.create(answer)
+        return ApiAnswer.create(answer, json)
 
     def del_address_sender(self, address: str) -> ApiAnswer:
         request_path = os.path.join(SETTING_ADDRESS_SENDER, address)
         answer = self._request(request_path, self._get_auth_header(), method=METHOD_DELETE)
-        return ApiAnswer.create(answer)
+        return ApiAnswer.create(answer, address)
 
     def get_bulk_list(self, items_range: str = '1-100') -> ApiAnswer:
         headers = self._get_auth_header()
@@ -82,7 +84,7 @@ class DevinoClient:
     def get_bulk(self, id_bulk: int) -> ApiAnswer:
         request_path = os.path.join(BULK, str(id_bulk))
         answer = self._request(request_path, self._get_auth_header())
-        return ApiAnswer.create(answer)
+        return ApiAnswer.create(answer, id_bulk)
 
     def add_bulk(self, name: str, sender_email: str, sender_name: str, subject: str, text: str, type_bulk: int,
                  start_datetime: datetime.datetime = None, end_datetime: datetime.datetime = None, user_id: str = "",
@@ -107,7 +109,7 @@ class DevinoClient:
         if end_datetime:
             json['EndDateTime'] = end_datetime.strftime("%m/%d/%Y %h:%m:%s")
         answer = self._request(BULK, self._get_auth_header(), json=json, method=METHOD_POST)
-        return ApiAnswer.create(answer)
+        return ApiAnswer.create(answer, json)
 
     def edit_bulk(self, id_bulk: int, name: str, sender_email: str, sender_name: str, subject: str, text: str,
                   type_bulk: int, start_datetime: datetime.datetime = None, end_datetime: datetime.datetime = None,
@@ -134,7 +136,8 @@ class DevinoClient:
             json['EndDateTime'] = end_datetime.strftime("%m/%d/%Y %h:%m:%s")
         request_path = os.path.join(BULK, str(id_bulk))
         answer = self._request(request_path, self._get_auth_header(), json=json, method=METHOD_PUT)
-        return ApiAnswer.create(answer)
+        json['id'] = id_bulk
+        return ApiAnswer.create(answer, json)
 
     def edit_bulk_status(self, id_bulk: int, task_state: str) -> ApiAnswer:
         json = {
@@ -142,12 +145,13 @@ class DevinoClient:
         }
         request_path = os.path.join(BULK, str(id_bulk), 'State')
         answer = self._request(request_path, self._get_auth_header(), json=json, method=METHOD_PUT)
-        return ApiAnswer.create(answer)
+        json['id'] = id_bulk
+        return ApiAnswer.create(answer, json)
 
     def get_template(self, id_template: int) -> ApiAnswer:
         request_path = os.path.join(TEMPLATE, str(id_template))
         answer = self._request(request_path, self._get_auth_header())
-        return ApiAnswer.create(answer)
+        return ApiAnswer.create(answer, id_template)
 
     def add_template(self, name: str, text: str, sender_email: str = "", sender_name: str = "",
                      subject: str = "", user_template_id: str = "") -> ApiAnswer:
@@ -162,7 +166,7 @@ class DevinoClient:
             "UserTemplateId": user_template_id,
         }
         answer = self._request(TEMPLATE, self._get_auth_header(), json=json, method=METHOD_POST)
-        return ApiAnswer.create(answer)
+        return ApiAnswer.create(answer, json)
 
     def edit_template(self, id_template: int, name: str, text: str, sender_email: str = "", sender_name: str = "",
                       subject: str = "", user_template_id: str = "") -> ApiAnswer:
@@ -178,12 +182,13 @@ class DevinoClient:
         }
         request_path = os.path.join(TEMPLATE, str(id_template))
         answer = self._request(request_path, self._get_auth_header(), json=json, method=METHOD_PUT)
-        return ApiAnswer.create(answer)
+        json['id'] = id_template
+        return ApiAnswer.create(answer, json)
 
     def del_template(self, id_template: int) -> ApiAnswer:
         request_path = os.path.join(TEMPLATE, str(id_template))
         answer = self._request(request_path, self._get_auth_header(), method=METHOD_DELETE)
-        return ApiAnswer.create(answer)
+        return ApiAnswer.create(answer, id_template)
 
     def get_state(self, id_bulk: int = None, start_date: datetime.date = None,
                   end_date: datetime.date = None) -> ApiAnswer:
@@ -196,7 +201,7 @@ class DevinoClient:
             params['StartDateTime'] = start_date.strftime('%Y-%m-%d')
             params['EndDateTime'] = end_date.strftime('%Y-%m-%d')
         answer = self._request(STATE, self._get_auth_header(), params=params)
-        return ApiAnswer.create(answer)
+        return ApiAnswer.create(answer, params)
 
     def get_state_detailing(self, id_bulk: int = None, start_date: datetime.date = None, end_date: datetime.date = None,
                             state: str = '', items_range: str = '1-100') -> ApiAnswer:
@@ -213,7 +218,7 @@ class DevinoClient:
         headers['Range'] = 'items={}'.format(items_range)
 
         answer = self._request(STATE_DETAILING, headers, params=params)
-        return ApiAnswer.create(answer)
+        return ApiAnswer.create(answer, params)
 
     def send_transactional_message(self, sender_email: str, sender_name: str, recipient_email: str, recipient_name: str,
                                    subject: str, text: str, user_message_id: str = "", user_campaign_id: str = "",
@@ -234,13 +239,13 @@ class DevinoClient:
             "TemplateId": template_id,
         }
         answer = self._request(TRANSACTIONAL_EMAIL, self._get_auth_header(), json=json, method=METHOD_POST)
-        return ApiAnswer.create(answer)
+        return ApiAnswer.create(answer, json)
 
     def get_status_transactional_message(self, data: list) -> ApiAnswer:
         request_path = os.path.join(TRANSACTIONAL_EMAIL, ','.join(data))
 
         answer = self._request(request_path, self._get_auth_header())
-        return ApiAnswer.create(answer)
+        return ApiAnswer.create(answer, data)
 
     def _get_auth_header(self) -> dict:
         headers = {'Authorization':
