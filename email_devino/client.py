@@ -109,7 +109,29 @@ class DevinoClient:
         answer = self._request(BULK, self._get_auth_header(), json=json, method=METHOD_POST)
         return ApiAnswer.create(answer)
 
-    def edit_bulk(self, id_bulk: int, json: dict) -> ApiAnswer:
+    def edit_bulk(self, id_bulk: int, name: str, sender_email: str, sender_name: str, subject: str, text: str,
+                  type_bulk: int, start_datetime: datetime.datetime = None, end_datetime: datetime.datetime = None,
+                  user_id: str = "", contact_list: list = None, template_id: str = "",
+                  duplicates: bool = None) -> ApiAnswer:
+        json = {
+            "Name": name,
+            "Sender": {
+                "Address": sender_email,
+                "Name": sender_name,
+            },
+            "Subject": subject,
+            "Text": text,
+            "Type": type_bulk,
+            "UserCampaignId": user_id,
+            "TemplateId": template_id,
+            "SendDuplicates": duplicates
+        }
+        if contact_list:
+            json["ContactGroups"] = [{"Id": id_contact, "Included": included} for id_contact, included in contact_list]
+        if start_datetime:
+            json['StartDateTime'] = start_datetime.strftime("%m/%d/%Y %h:%m:%s")
+        if end_datetime:
+            json['EndDateTime'] = end_datetime.strftime("%m/%d/%Y %h:%m:%s")
         request_path = os.path.join(BULK, str(id_bulk))
         answer = self._request(request_path, self._get_auth_header(), json=json, method=METHOD_PUT)
         return ApiAnswer.create(answer)
@@ -163,18 +185,30 @@ class DevinoClient:
         answer = self._request(request_path, self._get_auth_header(), method=METHOD_DELETE)
         return ApiAnswer.create(answer)
 
-    def get_state(self, id_bulk: int) -> ApiAnswer:
+    def get_state(self, id_bulk: int = None, start_date: datetime.date = None,
+                  end_date: datetime.date = None) -> ApiAnswer:
         params = {
-            'TaskId': id_bulk,
+            'Login': self.login,
         }
+        if id_bulk:
+            params['TaskId'] = id_bulk
+        if start_date and end_date:
+            params['StartDateTime'] = start_date.strftime('%Y-%m-%d')
+            params['EndDateTime'] = end_date.strftime('%Y-%m-%d')
         answer = self._request(STATE, self._get_auth_header(), params=params)
         return ApiAnswer.create(answer)
 
-    def get_state_detailing(self, id_bulk: int, state: str = '', items_range: str = '1-100') -> ApiAnswer:
+    def get_state_detailing(self, id_bulk: int = None, start_date: datetime.date = None, end_date: datetime.date = None,
+                            state: str = '', items_range: str = '1-100') -> ApiAnswer:
         params = {
-            'TaskId': id_bulk,
             'State': state,
+            'Login': self.login
         }
+        if id_bulk:
+            params['TaskId'] = id_bulk
+        if start_date and end_date:
+            params['StartDateTime'] = start_date.strftime('%Y-%m-%d')
+            params['EndDateTime'] = end_date.strftime('%Y-%m-%d')
         headers = self._get_auth_header()
         headers['Range'] = 'items={}'.format(items_range)
 
