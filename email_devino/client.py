@@ -1,12 +1,26 @@
 import base64
+import datetime
 import requests
+import os
 
 REST_URL = 'https://integrationapi.net/email/v1'
 SETTING_ADDRESS_SENDER = '/UserSettings/SenderAddresses'
+TASK = '/Tasks'
+TEMPLATE = '/Templates'
+STATE = '/Statistics'
+STATE_DETAILING = '/Statistics/Messages'
+TRANSACTIONAL_EMAIL = '/Messages'
 
 METHOD_GET = 'get'
 METHOD_POST = 'post'
 METHOD_DELETE = 'delete'
+METHOD_PUT = 'put'
+
+FORMAT = {'format': 'json'}
+
+TYPE_TASK_NORMAL = 1
+TYPE_TASK_BIRTH = 2
+TYPE_TASKS = (TYPE_TASK_NORMAL, TYPE_TASK_BIRTH)
 
 
 class DevinoError:
@@ -25,17 +39,19 @@ class DevinoException(Exception):
 
 
 class ApiAnswer:
-    def __init__(self, code: str, description: str, result: list):
+    def __init__(self, code: str, description: str, result: list, request_data: dict):
         self.code = code
         self.description = description
         self.result = result
+        self.request_data = request_data
 
     @classmethod
-    def create(cls, answer_data: dict):
+    def create(cls, answer_data: dict, request_data=None):
         return cls(
             code=answer_data.get('Code'),
             description=answer_data.get('Description'),
             result=answer_data.get('Result'),
+            request_data=request_data,
         )
 
 
@@ -47,47 +63,225 @@ class DevinoClient:
         self.url = url
 
     def get_addresses_sender(self) -> ApiAnswer:
-        params = {'format': 'json'}
-        answer = self._request(SETTING_ADDRESS_SENDER, self._get_auth_header(), params=params)
+        answer = self._request(SETTING_ADDRESS_SENDER, self._get_auth_header())
         return ApiAnswer.create(answer)
 
-    def add_address_sender(self, address) -> ApiAnswer:
-        params = {
-            'format': 'json',
-        }
-        data = {
+    def add_address_sender(self, address: str) -> ApiAnswer:
+        json = {
             'SenderAddress': address,
         }
-        answer = self._request(SETTING_ADDRESS_SENDER, self._get_auth_header(), data=data, params=params,
-                               method=METHOD_POST)
+        answer = self._request(SETTING_ADDRESS_SENDER, self._get_auth_header(), json=json, method=METHOD_POST)
+        return ApiAnswer.create(answer, json)
+
+    def del_address_sender(self, address: str) -> ApiAnswer:
+        request_path = os.path.join(SETTING_ADDRESS_SENDER, address)
+        answer = self._request(request_path, self._get_auth_header(), method=METHOD_DELETE)
+        return ApiAnswer.create(answer, {'Address': address})
+
+    def get_tasks(self, range_start: int = 1, range_end: int = 100) -> ApiAnswer:
+        headers = self._get_auth_header()
+        headers['Range'] = 'items={}-{}'.format(range_start, range_end)
+
+        answer = self._request(TASK, headers)
         return ApiAnswer.create(answer)
 
-    def del_address_sender(self, address) -> ApiAnswer:
+    def get_task(self, id_task: int) -> ApiAnswer:
+        request_path = os.path.join(TASK, str(id_task))
+        answer = self._request(request_path, self._get_auth_header())
+        return ApiAnswer.create(answer, {'Id': id_task})
+
+    def add_task(self, name: str, sender_email: str, sender_name: str, subject: str, text: str,
+                 type_task: int = TYPE_TASK_NORMAL, start: datetime.datetime = None,
+                 end: datetime.datetime = None, user_id: str = "", contact_list: list = None,
+                 template_id: str = "", duplicates: bool = None) -> ApiAnswer:
+        """
+        id = 1233 # example
+        included = true # example
+        contact_list = [(id, included), ]
+        """
+        assert type_task in TYPE_TASKS
+
+        json = {
+            "Name": name,
+            "Sender": {
+                "Address": sender_email,
+                "Name": sender_name,
+            },
+            "Subject": subject,
+            "Text": text,
+            "Type": type_task,
+            "UserCampaignId": user_id,
+            "TemplateId": template_id,
+            "SendDuplicates": duplicates
+        }
+        if contact_list:
+            json["ContactGroups"] = [{"Id": id_contact, "Included": included} for id_contact, included in contact_list]
+        if start:
+            json['StartDateTime'] = start.strftime("%m/%d/%Y %h:%m:%s")
+        if end:
+            json['EndDateTime'] = end.strftime("%m/%d/%Y %h:%m:%s")
+        answer = self._request(TASK, self._get_auth_header(), json=json, method=METHOD_POST)
+        return ApiAnswer.create(answer, json)
+
+    def edit_task(self, id_task: int, name: str, sender_email: str, sender_name: str, subject: str, text: str,
+                  type_task: int = TYPE_TASK_NORMAL, start: datetime.datetime = None, end: datetime.datetime = None,
+                  user_id: str = "", contact_list: list = None, template_id: str = "",
+                  duplicates: bool = None) -> ApiAnswer:
+        assert type_task in TYPE_TASKS
+
+        json = {
+            "Name": name,
+            "Sender": {
+                "Address": sender_email,
+                "Name": sender_name,
+            },
+            "Subject": subject,
+            "Text": text,
+            "Type": type_task,
+            "UserCampaignId": user_id,
+            "TemplateId": template_id,
+            "SendDuplicates": duplicates
+        }
+        if contact_list:
+            json["ContactGroups"] = [{"Id": id_contact, "Included": included} for id_contact, included in contact_list]
+        if start:
+            json['StartDateTime'] = start.strftime("%m/%d/%Y %h:%m:%s")
+        if end:
+            json['EndDateTime'] = end.strftime("%m/%d/%Y %h:%m:%s")
+        request_path = os.path.join(TASK, str(id_task))
+        answer = self._request(request_path, self._get_auth_header(), json=json, method=METHOD_PUT)
+        json['Id'] = id_task
+        return ApiAnswer.create(answer, json)
+
+    def edit_task_status(self, id_task: int, task_state: str) -> ApiAnswer:
+        json = {
+            'State': task_state,
+        }
+        request_path = os.path.join(TASK, str(id_task), 'State')
+        answer = self._request(request_path, self._get_auth_header(), json=json, method=METHOD_PUT)
+        json['Id'] = id_task
+        return ApiAnswer.create(answer, json)
+
+    def get_template(self, id_template: int) -> ApiAnswer:
+        request_path = os.path.join(TEMPLATE, str(id_template))
+        answer = self._request(request_path, self._get_auth_header())
+        return ApiAnswer.create(answer, {'Id': id_template})
+
+    def add_template(self, name: str, text: str, sender_email: str = "", sender_name: str = "",
+                     subject: str = "", user_template_id: str = "") -> ApiAnswer:
+        json = {
+            "Name": name,
+            "Sender": {
+                "Address": sender_email,
+                "Name": sender_name
+            },
+            "Subject": subject,
+            "Text": text,
+            "UserTemplateId": user_template_id,
+        }
+        answer = self._request(TEMPLATE, self._get_auth_header(), json=json, method=METHOD_POST)
+        return ApiAnswer.create(answer, json)
+
+    def edit_template(self, id_template: int, name: str, text: str, sender_email: str = "", sender_name: str = "",
+                      subject: str = "", user_template_id: str = "") -> ApiAnswer:
+        json = {
+            "Name": name,
+            "Sender": {
+                "Address": sender_email,
+                "Name": sender_name
+            },
+            "Subject": subject,
+            "Text": text,
+            "UserTemplateId": user_template_id,
+        }
+        request_path = os.path.join(TEMPLATE, str(id_template))
+        answer = self._request(request_path, self._get_auth_header(), json=json, method=METHOD_PUT)
+        json['Id'] = id_template
+        return ApiAnswer.create(answer, json)
+
+    def del_template(self, id_template: int) -> ApiAnswer:
+        request_path = os.path.join(TEMPLATE, str(id_template))
+        answer = self._request(request_path, self._get_auth_header(), method=METHOD_DELETE)
+        return ApiAnswer.create(answer, {'Id': id_template})
+
+    def get_state(self, id_task: int = None, start: datetime.date = None, end: datetime.date = None) -> ApiAnswer:
         params = {
-            'format': 'json',
+            'Login': self.login,
         }
-        data = {
-            'SenderAddress': address,
+        if id_task:
+            params['TaskId'] = id_task
+        if start and end:
+            params['StartDateTime'] = start.strftime('%Y-%m-%d')
+            params['EndDateTime'] = end.strftime('%Y-%m-%d')
+        answer = self._request(STATE, self._get_auth_header(), params=params)
+        return ApiAnswer.create(answer, params)
+
+    def get_state_detailing(self, id_task: int = None, start: datetime.date = None, end: datetime.date = None,
+                            state: str = '', range_start: int = 1, range_end: int = 100) -> ApiAnswer:
+        params = {
+            'State': state,
+            'Login': self.login
         }
-        answer = self._request(SETTING_ADDRESS_SENDER, self._get_auth_header(), data=data, params=params,
-                               method=METHOD_DELETE)
-        return ApiAnswer.create(answer)
+        if id_task:
+            params['TaskId'] = id_task
+        if start and end:
+            params['StartDateTime'] = start.strftime('%Y-%m-%d')
+            params['EndDateTime'] = end.strftime('%Y-%m-%d')
+        headers = self._get_auth_header()
+        headers['Range'] = 'items={}-{}'.format(range_start, range_end)
+
+        answer = self._request(STATE_DETAILING, headers, params=params)
+        return ApiAnswer.create(answer, params)
+
+    def send_transactional_message(self, sender_email: str, sender_name: str, recipient_email: str, recipient_name: str,
+                                   subject: str, text: str, user_message_id: str = "", user_campaign_id: str = "",
+                                   template_id: str = "") -> ApiAnswer:
+        """
+        Send single message
+        """
+
+        json = {
+            "Sender": {
+                "Address": sender_email,
+                "Name": sender_name
+            },
+            "Recipient": {
+                "Address": recipient_email,
+                "Name": recipient_name
+            },
+            "Subject": subject,
+            "Text": text,
+            "UserMessageId": user_message_id,
+            "UserCampaignId": user_campaign_id,
+            "TemplateId": template_id,
+        }
+        answer = self._request(TRANSACTIONAL_EMAIL, self._get_auth_header(), json=json, method=METHOD_POST)
+        return ApiAnswer.create(answer, json)
+
+    def get_status_transactional_message(self, data: list) -> ApiAnswer:
+        request_path = os.path.join(TRANSACTIONAL_EMAIL, ','.join(data))
+
+        answer = self._request(request_path, self._get_auth_header())
+        return ApiAnswer.create(answer, {'id_{}'.format(x): data[x] for x in range(len(data))})
 
     def _get_auth_header(self) -> dict:
         headers = {'Authorization':
                    'Basic {}'.format(base64.b64encode('{}:{}'.format(self.login, self.password).encode()).decode())}
         return headers
 
-    def _request(self, path, headers, params=None, data=None, method=METHOD_GET):
+    def _request(self, path, headers, params=FORMAT, json=None, method=METHOD_GET):
+        params['format'] = 'json'
         request_url = self.url + path
 
         try:
             if method == METHOD_GET:
                 response = requests.get(request_url, params=params, headers=headers)
             elif method == METHOD_POST:
-                response = requests.post(request_url, data=data, params=params, headers=headers)
+                response = requests.post(request_url, json=json, params=params, headers=headers)
+            elif method == METHOD_DELETE:
+                response = requests.delete(request_url, json=json, params=params, headers=headers)
             else:
-                response = requests.delete(request_url, data=data, params=params, headers=headers)
+                response = requests.put(request_url, json=json, params=params, headers=headers)
         except requests.ConnectionError as ex:
             raise DevinoException(
                 message='Ошибка соединения',
