@@ -5,7 +5,7 @@ import os
 
 REST_URL = 'https://integrationapi.net/email/v1'
 SETTING_ADDRESS_SENDER = '/UserSettings/SenderAddresses'
-Task = '/Tasks'
+TASK = '/Tasks'
 TEMPLATE = '/Templates'
 STATE = '/Statistics'
 STATE_DETAILING = '/Statistics/Messages'
@@ -82,11 +82,11 @@ class DevinoClient:
         headers = self._get_auth_header()
         headers['Range'] = 'items={}-{}'.format(range_start, range_end)
 
-        answer = self._request(Task, headers)
+        answer = self._request(TASK, headers)
         return ApiAnswer.create(answer)
 
     def get_task(self, id_task: int) -> ApiAnswer:
-        request_path = os.path.join(Task, str(id_task))
+        request_path = os.path.join(TASK, str(id_task))
         answer = self._request(request_path, self._get_auth_header())
         return ApiAnswer.create(answer, {'Id': id_task})
 
@@ -120,7 +120,7 @@ class DevinoClient:
             json['StartDateTime'] = start.strftime("%m/%d/%Y %h:%m:%s")
         if end:
             json['EndDateTime'] = end.strftime("%m/%d/%Y %h:%m:%s")
-        answer = self._request(Task, self._get_auth_header(), json=json, method=METHOD_POST)
+        answer = self._request(TASK, self._get_auth_header(), json=json, method=METHOD_POST)
         return ApiAnswer.create(answer, json)
 
     def edit_task(self, id_task: int, name: str, sender_email: str, sender_name: str, subject: str, text: str,
@@ -148,7 +148,7 @@ class DevinoClient:
             json['StartDateTime'] = start.strftime("%m/%d/%Y %h:%m:%s")
         if end:
             json['EndDateTime'] = end.strftime("%m/%d/%Y %h:%m:%s")
-        request_path = os.path.join(Task, str(id_task))
+        request_path = os.path.join(TASK, str(id_task))
         answer = self._request(request_path, self._get_auth_header(), json=json, method=METHOD_PUT)
         json['Id'] = id_task
         return ApiAnswer.create(answer, json)
@@ -157,7 +157,7 @@ class DevinoClient:
         json = {
             'State': task_state,
         }
-        request_path = os.path.join(Task, str(id_task), 'State')
+        request_path = os.path.join(TASK, str(id_task), 'State')
         answer = self._request(request_path, self._get_auth_header(), json=json, method=METHOD_PUT)
         json['Id'] = id_task
         return ApiAnswer.create(answer, json)
