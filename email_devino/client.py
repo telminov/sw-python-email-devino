@@ -46,7 +46,7 @@ class ApiAnswer:
         self.request_data = request_data
 
     @classmethod
-    def create(cls, answer_data: dict, request_data=None):
+    def create(cls, answer_data: dict, request_data: dict = None):
         return cls(
             code=answer_data.get('Code'),
             description=answer_data.get('Description'),
@@ -292,7 +292,7 @@ class DevinoClient:
             error_description = response.json()
             error = DevinoError(
                 code=error_description.get('Code'),
-                description=error_description.get('Desc'),
+                description=error_description.get('Description'),
             )
             raise DevinoException(
                 message='Ошибка отправки {0}-запроса'.format(method),
