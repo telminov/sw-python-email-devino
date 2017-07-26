@@ -258,11 +258,11 @@ class DevinoClient:
         answer = self._request(TRANSACTIONAL_EMAIL, self._get_auth_header(), json=json, method=METHOD_POST)
         return ApiAnswer.create(answer, json)
 
-    def get_status_transactional_message(self, data: list) -> ApiAnswer:
-        request_path = os.path.join(TRANSACTIONAL_EMAIL, ','.join(data))
+    def get_status_transactional_message(self, id_messages: list) -> ApiAnswer:
+        request_path = os.path.join(TRANSACTIONAL_EMAIL, ','.join(id_messages))
 
         answer = self._request(request_path, self._get_auth_header())
-        return ApiAnswer.create(answer, {'id_{}'.format(x): data[x] for x in range(len(data))})
+        return ApiAnswer.create(answer, {'id_{}'.format(x): id_messages[x] for x in range(len(id_messages))})
 
     def _get_auth_header(self) -> dict:
         headers = {'Authorization':
