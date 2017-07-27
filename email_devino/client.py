@@ -117,9 +117,9 @@ class DevinoClient:
         if contact_list:
             json["ContactGroups"] = [{"Id": id_contact, "Included": included} for id_contact, included in contact_list]
         if start:
-            json['StartDateTime'] = start.strftime("%m/%d/%Y %h:%m:%s")
+            json['StartDateTime'] = start.strftime("%m/%d/%Y %H:%M:%S")
         if end:
-            json['EndDateTime'] = end.strftime("%m/%d/%Y %h:%m:%s")
+            json['EndDateTime'] = end.strftime("%m/%d/%Y %H:%M:%S")
         answer = self._request(TASK, self._get_auth_header(), json=json, method=METHOD_POST)
         return ApiAnswer.create(answer, json)
 
@@ -145,9 +145,9 @@ class DevinoClient:
         if contact_list:
             json["ContactGroups"] = [{"Id": id_contact, "Included": included} for id_contact, included in contact_list]
         if start:
-            json['StartDateTime'] = start.strftime("%m/%d/%Y %h:%m:%s")
+            json['StartDateTime'] = start.strftime("%m/%d/%Y %H:%M:%S")
         if end:
-            json['EndDateTime'] = end.strftime("%m/%d/%Y %h:%m:%s")
+            json['EndDateTime'] = end.strftime("%m/%d/%Y %H:%M:%S")
         request_path = os.path.join(TASK, str(id_task))
         answer = self._request(request_path, self._get_auth_header(), json=json, method=METHOD_PUT)
         json['Id'] = id_task
