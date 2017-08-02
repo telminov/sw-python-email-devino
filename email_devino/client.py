@@ -22,6 +22,17 @@ TYPE_TASK_NORMAL = 1
 TYPE_TASK_BIRTH = 2
 TYPE_TASKS = (TYPE_TASK_NORMAL, TYPE_TASK_BIRTH)
 
+STATE_NEW = 0
+STATE_CREATED = 1
+STATE_STARTED = 2
+STATE_STOPPED = 3
+STATE_CANCELED = 4
+STATE_FINISHED = 5
+STATE_DELETED = 6
+STATE_FAILED = 7
+STATE_TASKS = (STATE_NEW, STATE_CREATED, STATE_STARTED, STATE_STOPPED, STATE_CANCELED,
+               STATE_FINISHED, STATE_DELETED, STATE_FAILED)
+
 
 class DevinoError:
     def __init__(self, code: int, description: str):
@@ -95,6 +106,7 @@ class DevinoClient:
                  end: datetime.datetime = None, user_id: str = "", contact_list: list = None,
                  template_id: str = "", duplicates: bool = None) -> ApiAnswer:
         """
+        http://docs.devinotele.com/emailhttp.html#id14
         id = 1233 # example
         included = true # example
         contact_list = [(id, included), ]
@@ -153,7 +165,12 @@ class DevinoClient:
         json['Id'] = id_task
         return ApiAnswer.create(answer, json)
 
-    def edit_task_status(self, id_task: int, task_state: str) -> ApiAnswer:
+    def edit_task_status(self, id_task: int, task_state: int) -> ApiAnswer:
+        """
+        http://docs.devinotele.com/emailhttp.html#id16
+        """
+        assert task_state in STATE_TASKS
+
         json = {
             'State': task_state,
         }
