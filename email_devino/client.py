@@ -73,18 +73,18 @@ class DevinoClient:
         self.password = password
         self.url = url
 
-    def get_addresses_sender(self) -> ApiAnswer:
+    def get_sender_addresses(self) -> ApiAnswer:
         answer = self._request(SETTING_ADDRESS_SENDER, self._get_auth_header())
         return ApiAnswer.create(answer)
 
-    def add_address_sender(self, address: str) -> ApiAnswer:
+    def add_sender_address(self, address: str) -> ApiAnswer:
         json = {
             'SenderAddress': address,
         }
         answer = self._request(SETTING_ADDRESS_SENDER, self._get_auth_header(), json=json, method=METHOD_POST)
         return ApiAnswer.create(answer, json)
 
-    def del_address_sender(self, address: str) -> ApiAnswer:
+    def del_sender_address(self, address: str) -> ApiAnswer:
         request_path = os.path.join(SETTING_ADDRESS_SENDER, address)
         answer = self._request(request_path, self._get_auth_header(), method=METHOD_DELETE)
         return ApiAnswer.create(answer, {'Address': address})
