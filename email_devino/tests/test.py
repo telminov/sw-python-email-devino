@@ -88,34 +88,34 @@ class DevinoClient(TestCase):
 
         self.assertEqual(response['Authorization'], 'Basic dGVzdF9sb2dpbjp0ZXN0X3Bhc3N3')
 
-    def test_get_addresses_sender(self, requests_mock):
+    def test_get_sender_addresses(self, requests_mock):
         requests_mock.get.return_value.status_code = 200
         requests_mock.get.return_value.json.return_value = {'Code': 'ok', 'Description': 'ok',
                                                             'Result': {'Address': 'test@test.test', 'Confirmed': True}}
 
-        response = self.client.get_addresses_sender()
+        response = self.client.get_sender_addresses()
         self.assertEqual(response.result, requests_mock.get.return_value.json.return_value['Result'])
 
         call_args, call_kwargs = requests_mock.get.call_args
         self.assertEqual(self.client.url + client.SETTING_ADDRESS_SENDER, call_args[0])
 
-    def test_add_address_sender(self, requests_mock):
+    def test_add_sender_address(self, requests_mock):
         requests_mock.post.return_value.status_code = 200
         requests_mock.post.return_value.json.return_value = {'Code': 'ok', 'Description': 'ok'}
 
         address = 'testtest@test.test'
-        self.client.add_address_sender(address)
+        self.client.add_sender_address(address)
 
         call_args, call_kwargs = requests_mock.post.call_args
         self.assertEqual(self.client.url + client.SETTING_ADDRESS_SENDER, call_args[0])
         self.assertEqual(address, call_kwargs['json']['SenderAddress'])
 
-    def test_del_address_sender(self, requests_mock):
+    def test_del_sender_address(self, requests_mock):
         requests_mock.delete.return_value.status_code = 200
         requests_mock.delete.return_value.json.return_value = {'Code': 'ok', 'Description': 'ok'}
 
         address = 'testtest@test.test'
-        self.client.del_address_sender(address)
+        self.client.del_sender_address(address)
 
         call_args, call_kwargs = requests_mock.delete.call_args
         self.assertEqual(self.client.url + client.SETTING_ADDRESS_SENDER + '/' + address, call_args[0])
